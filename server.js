@@ -13,6 +13,7 @@ var app = http.createServer(function(req, res) {
 }).listen(port);
 
 var io = socketIO.listen(app);
+var roomsStates = {};
 io.sockets.on('connection', function(socket) {
 
   // convenience function to log server messages on the client
@@ -22,16 +23,27 @@ io.sockets.on('connection', function(socket) {
     socket.emit('log', array);
   }
 
-  socket.on('message', function(message) {
-    log('Client said: ', message);
+  socket.on('roomMessage', function(roomMessage) {
+    log('Client said for room:', roomMessage.room , ', message:' , roomMessage.message);
     // for a real app, would be room-only (not broadcast)
-    socket.broadcast.emit('message', message);
+    //socket.broadcast.emit('message', message);
+    io.sockets.in(roomMessage.room).emit('message', roomMessage.message);
   });
 
   socket.on('create or join', function(room) {
+    //var totalClients = io.sockets.sockets.length;
     log('Received request to create or join room ' + room);
+    var roomExist = typeof roomsStates[room] !== "undefined";
+    if(!roomExist){
+      roomsStates[room] = {
+        numClients : 1 
+      }
+    }else{
+      roomsStates[room].numClients++;
+    }
 
-    var numClients = io.sockets.sockets.length;
+    var numClients = roomsStates[room].numClients;
+
     log('Room ' + room + ' now has ' + numClients + ' client(s)');
 
     if (numClients === 1) {

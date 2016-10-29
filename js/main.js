@@ -39,6 +39,7 @@ socket.on('created', function(room) {
 });
 
 socket.on('full', function(room) {
+  alert('Room ' + room + ' is full!');
   console.log('Room ' + room + ' is full');
 });
 
@@ -59,9 +60,13 @@ socket.on('log', function(array) {
 
 ////////////////////////////////////////////////
 
-function sendMessage(message) {
-  console.log('Client sending message: ', message);
-  socket.emit('message', message);
+function sendRoomMessage(message) {
+  var roomMessage = {
+    message,
+    room
+  }
+  console.log('Client sending room message: ', roomMessage);
+  socket.emit('roomMessage', roomMessage);
 }
 
 // This client receives a message
@@ -106,7 +111,7 @@ function gotStream(stream) {
   console.log('Adding local stream.');
   localVideo.src = window.URL.createObjectURL(stream);
   localStream = stream;
-  sendMessage('got user media');
+  sendRoomMessage('got user media');
   if (isInitiator) {
     maybeStart();
   }
@@ -140,7 +145,7 @@ function maybeStart() {
 }
 
 window.onbeforeunload = function() {
-  sendMessage('bye');
+  sendRoomMessage('bye');
 };
 
 /////////////////////////////////////////////////////////
@@ -162,7 +167,7 @@ function createPeerConnection() {
 function handleIceCandidate(event) {
   console.log('icecandidate event: ', event);
   if (event.candidate) {
-    sendMessage({
+    sendRoomMessage({
       type: 'candidate',
       label: event.candidate.sdpMLineIndex,
       id: event.candidate.sdpMid,
@@ -185,23 +190,23 @@ function handleCreateOfferError(event) {
 
 function doCall() {
   console.log('Sending offer to peer');
-  pc.createOffer(setLocalAndSendMessage, handleCreateOfferError);
+  pc.createOffer(setLocalAndSendRoomMessage, handleCreateOfferError);
 }
 
 function doAnswer() {
   console.log('Sending answer to peer.');
   pc.createAnswer().then(
-    setLocalAndSendMessage,
+    setLocalAndSendRoomMessage,
     onCreateSessionDescriptionError
   );
 }
 
-function setLocalAndSendMessage(sessionDescription) {
+function setLocalAndSendRoomMessage(sessionDescription) {
   // Set Opus as the preferred codec in SDP if Opus is present.
   //  sessionDescription.sdp = preferOpus(sessionDescription.sdp);
   pc.setLocalDescription(sessionDescription);
-  console.log('setLocalAndSendMessage sending message', sessionDescription);
-  sendMessage(sessionDescription);
+  console.log('setLocalAndSendRoomMessage sending message', sessionDescription);
+  sendRoomMessage(sessionDescription);
 }
 
 function onCreateSessionDescriptionError(error) {
@@ -250,7 +255,7 @@ function handleRemoteStreamRemoved(event) {
 function hangup() {
   console.log('Hanging up.');
   stop();
-  sendMessage('bye');
+  sendRoomMessage('bye');
 }
 
 function handleRemoteHangup() {
