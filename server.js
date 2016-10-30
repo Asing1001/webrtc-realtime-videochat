@@ -51,8 +51,7 @@ io.sockets.on('connection', function (socket) {
 
     function getRoomClientsCount() {
       var room = socket.adapter.rooms[roomName];
-      log('Room object:', room);
-      return room ? Object.keys(room).length : 0;
+      return room ? room.length : 0;
     }
   });
 

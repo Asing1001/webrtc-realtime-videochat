@@ -14,23 +14,45 @@ var pcConfig = {
   }]
 };
 
-// Set up audio and video regardless of what devices are present.
-var sdpConstraints = {
-  'mandatory': {
-    'OfferToReceiveAudio': true,
-    'OfferToReceiveVideo': true
-  }
-};
-
-/////////////////////////////////////////////
-
-var room = prompt('Enter room name:');
-
+var localVideo = document.querySelector('#localVideo');
+var remoteVideo = document.querySelector('#remoteVideo');
+var room;
 var socket = io.connect();
 
-if (room !== '') {
-  socket.emit('create or join', room);
-  console.log('Attempted to create or  join room', room);
+init();
+
+function init() {
+  room = prompt('Enter room name:');
+  if (room !== '') {
+    socket.emit('create or join', room);
+    console.log('Attempted to create or join room', room);
+  }
+
+  navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: true
+  })
+    .then(gotStream)
+    .catch(function (e) {
+      alert('getUserMedia() error: ' + e.name);
+    });
+
+  function gotStream(stream) {
+    console.log('Adding local stream.');
+    localVideo.src = window.URL.createObjectURL(stream);
+    localStream = stream;
+    sendRoomMessage('got user media');
+    if (isInitiator) {
+      maybeStart();
+    }
+  }
+
+  if (location.hostname !== 'localhost') {
+    //don't avaliable now
+    // requestTurn(
+    //   'https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913'
+    // );
+  }
 }
 
 socket.on('created', function (room) {
@@ -58,18 +80,6 @@ socket.on('log', function (array) {
   console.log.apply(console, array);
 });
 
-////////////////////////////////////////////////
-
-function sendRoomMessage(message) {
-  var roomMessage = {
-    message,
-    room
-  }
-  console.log('Client sending room message: ', roomMessage);
-  socket.emit('roomMessage', roomMessage);
-}
-
-// This client receives a message
 socket.on('message', function (message) {
   console.log('Client received message:', message);
   if (message === 'got user media') {
@@ -93,42 +103,16 @@ socket.on('message', function (message) {
   }
 });
 
-////////////////////////////////////////////////////
 
-var localVideo = document.querySelector('#localVideo');
-var remoteVideo = document.querySelector('#remoteVideo');
-
-navigator.mediaDevices.getUserMedia({
-  audio: true,
-  video: true
-})
-  .then(gotStream)
-  .catch(function (e) {
-    alert('getUserMedia() error: ' + e.name);
-  });
-
-function gotStream(stream) {
-  console.log('Adding local stream.');
-  localVideo.src = window.URL.createObjectURL(stream);
-  localStream = stream;
-  sendRoomMessage('got user media');
-  if (isInitiator) {
-    maybeStart();
+function sendRoomMessage(message) {
+  var roomMessage = {
+    message,
+    room
   }
+  console.log('Client sending room message: ', roomMessage);
+  socket.emit('roomMessage', roomMessage);
 }
 
-var constraints = {
-  video: true
-};
-
-console.log('Getting user media with constraints', constraints);
-
-if (location.hostname !== 'localhost') {
-  //don't avaliable now
-  // requestTurn(
-  //   'https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913'
-  // );
-}
 
 function maybeStart() {
   console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady);
@@ -270,13 +254,9 @@ function handleRemoteHangup() {
 
 function stop() {
   isStarted = false;
-  // isAudioMuted = false;
-  // isVideoMuted = false;
   pc.close();
   pc = null;
 }
-
-///////////////////////////////////////////
 
 // Set Opus as the default audio codec if it's present.
 function preferOpus(sdp) {
