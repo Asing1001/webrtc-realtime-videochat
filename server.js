@@ -30,17 +30,14 @@ io.sockets.on('connection', function (socket) {
 
   socket.on('create or join', function (roomName) {
     log('Received request to create or join room ' + roomName);
-    var room = socket.adapter.rooms[roomName];
-    var roomClientsCount = room ? Object.keys(room).length : 0;
+    var roomClientsCount = getRoomClientsCount();
 
     if (roomClientsCount === 0) {
-      roomClientsCount++;
       socket.join(roomName);
       log('Client ID ' + socket.id + ' created room ' + roomName);
       socket.emit('created', roomName, socket.id);
 
     } else if (roomClientsCount === 1) {
-      roomClientsCount++;
       log('Client ID ' + socket.id + ' joined room ' + roomName);
       io.sockets.in(roomName).emit('join', roomName);
       socket.join(roomName);
@@ -50,8 +47,16 @@ io.sockets.on('connection', function (socket) {
       socket.emit('full', roomName);
     }
 
-    log('Room ' + roomName + ' now has ' + roomClientsCount + ' client(s)');
+    log('Room ' + roomName + ' now has ' + getRoomClientsCount() + ' client(s)');
+
+    function getRoomClientsCount() {
+      var room = socket.adapter.rooms[roomName];
+      log('Room object:', room);
+      return room ? Object.keys(room).length : 0;
+    }
   });
+
+
 
   socket.on('disconnect', function () {
 
