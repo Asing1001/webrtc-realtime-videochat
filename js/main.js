@@ -33,28 +33,28 @@ if (room !== '') {
   console.log('Attempted to create or  join room', room);
 }
 
-socket.on('created', function(room) {
+socket.on('created', function (room) {
   console.log('Created room ' + room);
   isInitiator = true;
 });
 
-socket.on('full', function(room) {
+socket.on('full', function (room) {
   alert('Room ' + room + ' is full!');
   console.log('Room ' + room + ' is full');
 });
 
-socket.on('join', function (room){
+socket.on('join', function (room) {
   console.log('Another peer made a request to join room ' + room);
   console.log('This peer is the initiator of room ' + room + '!');
   isChannelReady = true;
 });
 
-socket.on('joined', function(room) {
+socket.on('joined', function (room) {
   console.log('joined: ' + room);
   isChannelReady = true;
 });
 
-socket.on('log', function(array) {
+socket.on('log', function (array) {
   console.log.apply(console, array);
 });
 
@@ -70,7 +70,7 @@ function sendRoomMessage(message) {
 }
 
 // This client receives a message
-socket.on('message', function(message) {
+socket.on('message', function (message) {
   console.log('Client received message:', message);
   if (message === 'got user media') {
     maybeStart();
@@ -102,10 +102,10 @@ navigator.mediaDevices.getUserMedia({
   audio: true,
   video: true
 })
-.then(gotStream)
-.catch(function(e) {
-  alert('getUserMedia() error: ' + e.name);
-});
+  .then(gotStream)
+  .catch(function (e) {
+    alert('getUserMedia() error: ' + e.name);
+  });
 
 function gotStream(stream) {
   console.log('Adding local stream.');
@@ -144,7 +144,7 @@ function maybeStart() {
   }
 }
 
-window.onbeforeunload = function() {
+window.onbeforeunload = function () {
   sendRoomMessage('bye');
 };
 
@@ -190,11 +190,13 @@ function handleCreateOfferError(event) {
 
 function doCall() {
   console.log('Sending offer to peer');
+  localVideo.classList.add('onCall');
   pc.createOffer(setLocalAndSendRoomMessage, handleCreateOfferError);
 }
 
 function doAnswer() {
   console.log('Sending answer to peer.');
+  localVideo.classList.add('onCall');
   pc.createAnswer().then(
     setLocalAndSendRoomMessage,
     onCreateSessionDescriptionError
@@ -226,7 +228,7 @@ function requestTurn(turnURL) {
     console.log('Getting TURN server from ', turnURL);
     // No TURN server. Get one from computeengineondemand.appspot.com:
     var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
+    xhr.onreadystatechange = function () {
       if (xhr.readyState === 4 && xhr.status === 200) {
         var turnServer = JSON.parse(xhr.responseText);
         console.log('Got TURN server: ', turnServer);
@@ -261,7 +263,9 @@ function hangup() {
 function handleRemoteHangup() {
   console.log('Session terminated.');
   stop();
-  isInitiator = false;
+  isInitiator = true;
+  localVideo.classList.remove('onCall');
+  remoteVideo.src = "";
 }
 
 function stop() {
